@@ -1,0 +1,47 @@
+
+name: CI for dotNet application
+on:
+    push:
+      branches:
+      - master
+env:
+    NUGET_VERSION: '5.8.0'
+    DOTNETSDK_VERSION: '3.1.302'
+jobs:
+    build:
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@master
+            - name: Creating artifact directories
+              run:
+                mkdir buildartifact
+                mkdir deploymenttemplates
+            - name: Install Nuget
+              uses: nuget/setup-nuget@v1
+              with:
+                nuget-version: ${{env.NUGET_VERSION}}
+            - name: Nuget restore
+              run:
+                cd Application
+                nuget restore
+            - name: Add MSBuild to the PATH
+              uses: microsoft/setup-msbuild@v1.0.0
+              env:
+                ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+            - name: Run MSBuild
+              run:
+                cd Application
+                msbuild .\SampleWebApplication.sln -p:Configuration=Release
+            - name: Setup .NET sdk
+              uses: actions/setup-dotnet@v1
+              with:
+                dotnet-version: ${{ env. DOTNETSDK_VERSION }}
+            - name: Run unit tests
+              run: | 
+                cd Application\SampleWebApplication.UnitTests
+                dotnet test bin\Release\*.UnitTests.dll --verbosity norm                     
+
+
+
+
+
