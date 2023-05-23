@@ -1,9 +1,8 @@
-
-name: CI for dotNet application
+name: CI for dot net application
 on:
     push:
       branches:
-      - master
+        - master
 env:
     NUGET_VERSION: '5.8.0'
     DOTNETSDK_VERSION: '3.1.302'
@@ -13,35 +12,41 @@ jobs:
         steps:
             - uses: actions/checkout@master
             - name: Creating artifact directories
-              run:
-                mkdir buildartifact
+              run: |
+                mkdir buildartifacts
                 mkdir deploymenttemplates
-            - name: Install Nuget
+            - name: Install Nuget              
               uses: nuget/setup-nuget@v1
               with:
-                nuget-version: ${{env.NUGET_VERSION}}
+                nuget-version: ${{ env.NUGET_VERSION }}
             - name: Nuget restore
-              run:
+              run: |
                 cd Application
                 nuget restore
-            - name: Add MSBuild to the PATH
+            - name: Add MSBuild to PATH
               uses: microsoft/setup-msbuild@v1.0.0
               env:
                 ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        
             - name: Run MSBuild
-              run:
+              run: |
                 cd Application
                 msbuild .\SampleWebApplication.sln -p:Configuration=Release
             - name: Setup .NET sdk
               uses: actions/setup-dotnet@v1
               with:
-                dotnet-version: ${{ env. DOTNETSDK_VERSION }}
+                  dotnet-version: ${{ env. DOTNETSDK_VERSION }}
+            
             - name: Run unit tests
               run: | 
                 cd Application\SampleWebApplication.UnitTests
-                dotnet test bin\Release\*.UnitTests.dll --verbosity norm                     
-
-
-
-
-
+                dotnet test bin\Release\*.UnitTests.dll --verbosity normal
+            - name: Archive Application
+              run: |
+                  Compress-Archive -Path ./Application/SampleWebApplication -DestinationPath ./buildartifacts/Application.zip
+            - name: Upload Application to Build Artifact
+              continue-on-error: false
+              uses: actions/upload-artifact@v2
+              with:
+                name: buildartifacts
+                path: buildartifacts
